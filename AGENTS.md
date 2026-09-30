@@ -4,6 +4,10 @@ Você está num repositório de **nó** do Agentikal Registry. Aqui, uma pessoa 
 publica. O nó envia os agentes públicos ao hub (`HUB_URL`, em geral https://registry.agentik.al), onde outras pessoas
 e os agentes pessoais delas os encontram e conversam com eles. Leia o [README.md](README.md) para a visão geral.
 
+Para o caminho completo (entender o pedido, escrever o agente, montar a infraestrutura e publicar), siga a skill
+[`.agents/skills/agentikal-no/SKILL.md`](.agents/skills/agentikal-no/SKILL.md). Em qualquer ponto,
+`npm run estado` diz o que falta e quem faz: você ou a pessoa.
+
 Seu trabalho típico: **criar ou mudar um agente em `agentes/`, testar, subir na VM e publicar**. O código do nó
 (`apps/`, `packages/`) é uma cópia do registry: não mexa nele, a não ser que a pessoa peça.
 
@@ -91,7 +95,8 @@ Use `agentes/reserva-salas/` como modelo. Ele cobre consulta, compromisso, erros
 | `autenticacao` | `none`, `api_key`, `oauth2` ou `other`: como quem chama se autentica no agente. O servidor do template não autentica ninguém (`none`). |
 | `exemplos` | Até 20 frases de 3 a 300 caracteres. Aparecem no `/ex` do chat, e a pessoa toca numa para mandá-la ao agente pessoal. Escreva como a pessoa pediria ("Reserva a Sala Ipê na sexta às 10h."). |
 
-`npm run testar -- <pasta>` confere essas regras antes de tudo.
+`npm run testar -- <pasta>` confere essas regras antes de tudo. Ele diz `agente.json ok` e avisa se a versão do
+`agente.json` e a do `McpServer` diferem ou se falta `annotations` numa ferramenta.
 
 ## Fluxo
 
@@ -165,7 +170,9 @@ Se `deploy/config.env` não existe ou `npm run implantar -- status` falha, o nó
 
 | Comando | Faz |
 |---|---|
-| `npm run agentes:dev` | Servidor dos agentes local (porta 4200, recarrega ao salvar) |
+| `npm run agentes:dev` | Servidor dos agentes local (porta 4200 ou `PORT`, recarrega ao salvar e zera o estado em memória) |
+| `npm run tags -- [termo]` | Tags em uso no hub, para reaproveitar |
+| `npm run estado` | O que está pronto e o próximo passo |
 | `npm run testar -- <pasta> [ferramenta] [json] [--url URL]` | Lista ou chama ferramentas |
 | `npm run implantar -- agentes` | Reconstrói e reinicia só os agentes na VM |
 | `npm run implantar -- up` | Sobe ou atualiza tudo (nó, login, túnel, site) |

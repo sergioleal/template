@@ -6,14 +6,16 @@
  *   npm run testar -- <pasta> <ferramenta> '<json>'        chama uma ferramenta
  *   npm run testar -- <pasta> --url https://.../mcp        contra outra URL (ex.: a pública)
  *
- * Por padrão usa o servidor local (npm run agentes), em http://localhost:4200/<pasta>/mcp.
+ * Por padrão usa o servidor local (npm run agentes:dev), em http://localhost:<PORT>/<pasta>/mcp, com PORT=4200 se não
+ * definido. Rode os dois com o mesmo PORT. O servidor só vê mudanças no código se rodar com agentes:dev (recarrega
+ * ao salvar); ao recarregar, o estado em memória dos agentes volta ao início.
  */
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
-import { conferirAgente } from "../ferramentas/agente-json.mjs";
+import { conferirAgente, lerAgente } from "../ferramentas/agente-json.mjs";
 
 const argv = process.argv.slice(2);
 const i = argv.indexOf("--url");
@@ -32,7 +34,7 @@ const problemas = conferirAgente(dir);
 if (problemas.length) {
   console.log(`agentes/${pasta}/agente.json tem problemas (o publicar vai recusar):`);
   for (const p of problemas) console.log(`  - ${p}`);
-}
+} else console.log(`agentes/${pasta}/agente.json ok`);
 
 const url = urlOpcao ?? `http://localhost:${process.env.PORT ?? 4200}/${pasta}/mcp`;
 const cliente = new Client({ name: "testar", version: "1.0.0" });
@@ -44,12 +46,20 @@ try {
 }
 const info = cliente.getServerVersion();
 console.log(`${info?.name} ${info?.version} em ${url}`);
+try {
+  const versao = lerAgente(dir).versao;
+  if (info?.version && versao && info.version !== versao) console.log(`aviso: agente.json diz versão ${versao} e o McpServer ${info.version}; use a mesma nos dois.`);
+} catch {
+  // agente.json ilegível: já apareceu nos problemas acima.
+}
 console.log(`instructions: ${cliente.getInstructions() ?? "(nenhuma: o catálogo fica sem descrição do fluxo)"}`);
 
 if (!ferramenta) {
   const { tools } = await cliente.listTools();
   for (const t of tools) {
     const a = t.annotations ?? {};
+    if (a.readOnlyHint === undefined && a.destructiveHint === undefined) console.log(`
+aviso: ${t.name} sem annotations (readOnlyHint/destructiveHint): será tratada como compromisso.`);
     const tipo = a.readOnlyHint ? "consulta" : a.destructiveHint === false ? "sem compromisso" : "compromisso (pede confirmação)";
     console.log(`\n- ${t.name} [${tipo}]${t.title ? ` — ${t.title}` : ""}\n  ${t.description ?? "(sem descrição)"}`);
     console.log(`  argumentos: ${Object.keys(t.inputSchema?.properties ?? {}).join(", ") || "nenhum"}`);

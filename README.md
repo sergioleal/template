@@ -5,7 +5,8 @@ Este repositório é um ponto de partida para uma empresa ou pessoa publicar os 
 "Empresa Exemplo") com os seus agentes. O nó envia os agentes públicos ao **hub**, onde qualquer pessoa os encontra
 e o agente pessoal de cada uma conversa com eles.
 
-Tem instruções para uma IA (Claude Code, Codex etc.) criar e publicar agentes: veja [AGENTS.md](AGENTS.md).
+Uma IA pode fazer o caminho inteiro com você (criar o agente, montar a infraestrutura e publicar) pela skill
+`agentikal-no`: veja [Com uma IA](#com-uma-ia-claude-code-codex-cursor). As regras para ela estão em [AGENTS.md](AGENTS.md).
 
 ```
                         Cloudflare                                   Sua VM (Docker)
@@ -31,6 +32,33 @@ A VM não abre nenhuma porta de entrada além do SSH: tudo chega pelo túnel do 
 | `ferramentas/publicar.mjs` | Publica um agente no seu nó (login pelo navegador, uma vez) e espera ele aparecer no hub. |
 | `deploy/` | Implantação: `implantar.mjs`, `docker-compose.yml`, realm do Keycloak, `config.example.env`. |
 | `apps/api`, `apps/web`, `apps/edge`, `packages/shared` | O código do nó, copiado do registry (veja [UPSTREAM.md](UPSTREAM.md)). Não precisa mexer. |
+
+## Com uma IA (Claude Code, Codex, Cursor)
+
+A skill `agentikal-no` guia a IA do começo ao fim:
+1. pergunta o que o agente faz e os dados do nó;
+2. escreve e testa o agente;
+3. sobe a infraestrutura;
+4. publica até o agente aparecer no hub.
+
+Ela para nos passos que são seus: os logins do Cloudflare, a aprovação do hub, a criação da sua conta e o login da
+publicação. Em qualquer ponto, `npm run estado` mostra o que já está pronto e o próximo passo.
+
+| Ferramenta | Onde a skill está | Como chamar |
+|---|---|---|
+| Claude Code | `.claude/skills/agentikal-no/` | `/agentikal-no`, ou peça "crie e publique um agente no Agentikal" |
+| Codex | `.agents/skills/agentikal-no/` | `$agentikal-no`, ou o mesmo pedido |
+| Cursor | `.agents/skills/agentikal-no/` | `/agentikal-no`, ou o mesmo pedido |
+
+Para usar fora deste repositório (a IA clona o template para você), copie a pasta da skill para a pasta de skills
+do seu usuário:
+- Claude Code: `~/.claude/skills/agentikal-no`;
+- Codex e Cursor: `~/.agents/skills/agentikal-no`.
+
+Quem editar a skill edita `.agents/skills/agentikal-no` e roda `npm run skill:sincronizar`, que atualiza a cópia do
+Claude Code.
+
+Em [exemplos/](exemplos/) há prompts prontos, como o de um agente que agenda shows de uma banda.
 
 ## Do zero ao agente no hub
 
@@ -160,6 +188,7 @@ visibilidade valem sem versão nova.
 | `npm run implantar -- senha <email>` | Nova senha temporária para uma conta |
 | `npm run publicar -- listar` | Seus agentes no nó e as versões |
 | `npm run publicar -- sair` | Apaga o login guardado em `.publicar/` |
+| `npm run estado` | O que já está pronto e o próximo passo (`-- --local` sem rede, `-- --json` para scripts) |
 
 O painel do nó (`https://SITE`, com login) também cria agentes, publica versões e mostra a situação do envio ao hub.
 

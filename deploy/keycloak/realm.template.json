@@ -1,0 +1,61 @@
+{
+  "realm": "{{REALM}}",
+  "enabled": true,
+  "displayName": "{{NOME}}",
+  "registrationAllowed": false,
+  "registrationEmailAsUsername": true,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": false,
+  "rememberMe": true,
+  "verifyEmail": false,
+  "sslRequired": "external",
+  "bruteForceProtected": true,
+  "failureFactor": 10,
+  "internationalizationEnabled": true,
+  "supportedLocales": ["pt-BR", "en"],
+  "defaultLocale": "pt-BR",
+  "ssoSessionIdleTimeout": 86400,
+  "ssoSessionMaxLifespan": 1209600,
+  "offlineSessionIdleTimeout": 2592000,
+  "passwordPolicy": "length(10) and notUsername and notEmail",
+  "clients": [
+    {
+      "clientId": "{{REALM}}-web",
+      "name": "{{NOME}}",
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "${REALM_WEB_SECRET}",
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "frontchannelLogout": true,
+      "redirectUris": ["https://{{SITE}}/api/auth/callback"],
+      "webOrigins": ["https://{{SITE}}"],
+      "rootUrl": "https://{{SITE}}",
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "https://{{SITE}}/*"
+      },
+      "defaultClientScopes": ["profile", "email", "roles", "web-origins", "basic"],
+      "optionalClientScopes": ["offline_access"]
+    },
+    {
+      "clientId": "{{REALM}}-cli",
+      "name": "{{NOME}} — publicação pelo terminal",
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "redirectUris": ["http://127.0.0.1:8976/callback"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      },
+      "defaultClientScopes": ["profile", "email", "roles", "basic"],
+      "optionalClientScopes": ["offline_access"]
+    }
+  ]
+}

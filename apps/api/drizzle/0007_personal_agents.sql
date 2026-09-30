@@ -1,0 +1,3 @@
+ALTER TABLE "agents" ADD COLUMN "kind" text DEFAULT 'mcp' NOT NULL;--> statement-breakpoint
+CREATE UNIQUE INDEX "agents_personal_owner_idx" ON "agents" USING btree ("owner_id") WHERE "agents"."kind" = 'personal' and "agents"."deleted_at" is null;--> statement-breakpoint
+ALTER TABLE "agents" ADD CONSTRAINT "agents_kind_check" CHECK ("agents"."kind" in ('mcp', 'personal') and ("agents"."kind" = 'mcp' or "agents"."visibility" = 'unlisted'));

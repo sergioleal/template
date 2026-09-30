@@ -1,0 +1,23 @@
+{
+  "name": "template-agentes",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*",
+    "agentes"
+  ],
+  "scripts": {
+    "agentes": "node agentes/servidor.mjs",
+    "agentes:dev": "node --watch agentes/servidor.mjs",
+    "testar": "node agentes/testar.mjs",
+    "publicar": "node ferramentas/publicar.mjs",
+    "implantar": "node deploy/implantar.mjs",
+    "build": "npm run build --workspace @agentikal/web && npm run build --workspace @agentikal/api",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.3",
+    "typescript": "^7.0.2"
+  }
+}

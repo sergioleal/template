@@ -1,0 +1,4 @@
+# Os arquivos vão para uma VM Linux (Docker, bash): sempre LF.
+* text=auto eol=lf
+*.png binary
+*.ico binary

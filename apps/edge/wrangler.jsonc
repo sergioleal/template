@@ -1,0 +1,19 @@
+{
+  // Front do nó na borda: serve o build do site (apps/web/dist) e repassa para a API do nó tudo o que não é
+  // arquivo estático (veja src/worker.ts). Este arquivo é só para `wrangler dev` local, na frente de uma API local.
+  // Em produção, o `npm run implantar -- up` gera apps/edge/wrangler.producao.jsonc (fora do git) com o nome do
+  // Worker, o domínio do site (SITE) e a API pelo túnel (API), e define o segredo EDGE_SECRET.
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "agentes-no-dev",
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-09-01",
+  "assets": {
+    "directory": "../web/dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    // O Worker decide primeiro: rotas da API e /a/* não podem cair nos arquivos estáticos.
+    "run_worker_first": true
+  },
+  "observability": { "enabled": true },
+  "vars": { "API_ORIGIN": "http://127.0.0.1:3100" }
+}

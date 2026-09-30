@@ -1,0 +1,16 @@
+{
+  "nome": "Reserva de Salas",
+  "endereco": "reserva-salas",
+  "resumo": "Reserva salas de reunião da empresa: consulta salas e horários livres, reserva e cancela.",
+  "tags": ["reserva-de-salas", "escritorio", "agenda"],
+  "visibilidade": "public",
+  "versao": "1.0.0",
+  "descricao": "descricao.md",
+  "autenticacao": "none",
+  "exemplos": [
+    "Quais salas cabem 10 pessoas?",
+    "A Sala Buriti está livre amanhã às 14h?",
+    "Reserva a Sala Ipê na sexta às 10h para a reunião de planejamento.",
+    "Cancela a reserva RS-0001."
+  ]
+}

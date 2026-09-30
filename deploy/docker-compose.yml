@@ -1,0 +1,165 @@
+# Stack do nó numa VM: Postgres, a API do nó (o registry em REGISTRY_MODE=node), os agentes (servidor MCP),
+# Keycloak (login), o túnel do Cloudflare (nenhuma porta de entrada aberta) e backup diário.
+# O site fica no Worker do Cloudflare, na frente da API.
+#
+# Quem sobe é o "npm run implantar -- up", que gera na VM os arquivos que não vão para o git:
+#   .env                  POSTGRES_PASSWORD, KEYCLOAK_ADMIN_PASSWORD, REALM_WEB_SECRET, AUTH_HOST, MCP_URL, BUILD_CONTEXT
+#   env/no.env            configuração da API do nó
+#   secrets/no.pem        chave Ed25519 do nó (assina os envios ao hub)
+#   keycloak/realm.json   realm do nó (de keycloak/realm.template.json)
+#   cloudflared/config.yml e cloudflared/<ID do túnel>.json
+name: agentes
+
+x-log: &log
+  logging:
+    driver: json-file
+    options: { max-size: "10m", max-file: "5" }
+
+x-no: &no
+  image: agentes-no:latest
+  build:
+    # Na VM, o código enviado pelo implantar (BUILD_CONTEXT no .env); aqui, a raiz do repositório.
+    context: ${BUILD_CONTEXT:-..}
+    dockerfile: apps/api/Dockerfile
+    args:
+      # O assistente do nó usa o Claude CLI; ligue com INSTALL_CLAUDE=true e CLAUDE_CODE_OAUTH_TOKEN no .env.
+      INSTALL_CLAUDE: ${INSTALL_CLAUDE:-false}
+  restart: unless-stopped
+  env_file: ./env/no.env
+  <<: *log
+
+services:
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: registry
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no deploy/.env}
+      POSTGRES_DB: registry
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U registry"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    <<: *log
+
+  migrate:
+    <<: *no
+    restart: "no"
+    command: ["node", "dist/migrate.js"]
+    environment:
+      DATABASE_URL: postgres://registry:${POSTGRES_PASSWORD}@db:5432/registry
+      NODE_PRIVATE_KEY_FILE: /run/secrets/no.pem
+    volumes:
+      - ./secrets/no.pem:/run/secrets/no.pem:ro
+    depends_on:
+      db: { condition: service_healthy }
+
+  no:
+    <<: *no
+    environment:
+      DATABASE_URL: postgres://registry:${POSTGRES_PASSWORD}@db:5432/registry
+      PORT: "3100"
+      NODE_PRIVATE_KEY_FILE: /run/secrets/no.pem
+      CLAUDE_CODE_OAUTH_TOKEN: ${CLAUDE_CODE_OAUTH_TOKEN:-}
+    volumes:
+      - ./secrets/no.pem:/run/secrets/no.pem:ro
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3100/healthz').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  # Os agentes deste repositório (agentes/*): um servidor MCP, uma rota /<pasta>/mcp por agente.
+  agentes:
+    image: agentes-mcp:latest
+    build:
+      context: ${BUILD_CONTEXT:-..}
+      dockerfile: agentes/Dockerfile
+    restart: unless-stopped
+    environment:
+      PORT: "4200"
+      HOST: "0.0.0.0"
+      PUBLIC_URL: ${MCP_URL:?defina MCP_URL no deploy/.env}
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4200/healthz').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    <<: *log
+
+  # Contas do nó. O realm vem de keycloak/realm.json na primeira subida; o túnel só publica /realms e /resources
+  # (o console de administração fica acessível apenas de dentro da VM).
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.7.4
+    restart: unless-stopped
+    command: ["start", "--import-realm"]
+    mem_limit: 1g
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://db:5432/keycloak
+      KC_DB_USERNAME: registry
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD}
+      KC_HOSTNAME: https://${AUTH_HOST:?defina AUTH_HOST no deploy/.env}
+      KC_HTTP_ENABLED: "true"
+      KC_PROXY_HEADERS: xforwarded
+      KC_HEALTH_ENABLED: "true"
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?defina KEYCLOAK_ADMIN_PASSWORD no deploy/.env}
+      # Lido pelo realm.json: segredo do cliente web, o mesmo OIDC_CLIENT_SECRET da API do nó.
+      REALM_WEB_SECRET: ${REALM_WEB_SECRET:?}
+    volumes:
+      - ./keycloak/realm.json:/opt/keycloak/data/import/realm.json:ro
+    depends_on:
+      db: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && printf 'GET /health/ready HTTP/1.0\r\n\r\n' >&3 && grep -q UP <&3"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
+    <<: *log
+
+  tunnel:
+    image: cloudflare/cloudflared:2026.9.3
+    restart: unless-stopped
+    command: ["tunnel", "--no-autoupdate", "--config", "/etc/cloudflared/config.yml", "run"]
+    volumes:
+      - ./cloudflared:/etc/cloudflared:ro
+    depends_on:
+      no: { condition: service_healthy }
+      agentes: { condition: service_healthy }
+      keycloak: { condition: service_healthy }
+    <<: *log
+
+  # Dump diário dos dois bancos (o do nó e o das contas), guardando os últimos 14 de cada.
+  backup:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      PGHOST: db
+      PGUSER: registry
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - backups:/backups
+    entrypoint:
+      - sh
+      - -c
+      - |
+        while true; do
+          stamp=$$(date +%Y%m%d-%H%M)
+          for d in registry keycloak; do pg_dump -Fc "$$d" > "/backups/$$d-$$stamp.dump"; done
+          ls -1t /backups/*.dump | tail -n +29 | xargs -r rm -f
+          sleep 86400
+        done
+    depends_on:
+      db: { condition: service_healthy }
+
+volumes:
+  pgdata:
+  backups:

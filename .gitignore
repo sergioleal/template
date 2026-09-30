@@ -1,0 +1,16 @@
+node_modules
+dist
+.env
+*.log
+.idea
+.vscode
+*.tsbuildinfo
+.wrangler
+
+# Configuração e segredos do seu nó (nunca versionar)
+*.pem
+deploy/config.env
+deploy/segredos/
+apps/edge/wrangler.producao.jsonc
+# Login do comando de publicação
+.publicar/

@@ -1,0 +1,3 @@
+ALTER TABLE "assistant_conversations" ADD COLUMN "agent_id" char(12);--> statement-breakpoint
+ALTER TABLE "assistant_conversations" ADD CONSTRAINT "assistant_conversations_agent_id_agents_id_fk" FOREIGN KEY ("agent_id") REFERENCES "public"."agents"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+CREATE INDEX "assistant_conversations_agent_idx" ON "assistant_conversations" USING btree ("user_id","agent_id","updated_at");

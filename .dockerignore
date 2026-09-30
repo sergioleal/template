@@ -1,0 +1,14 @@
+node_modules
+**/node_modules
+**/dist
+.env
+.env.*
+!.env.example
+.deploy
+.wrangler
+**/.wrangler
+.git
+.idea
+.vscode
+*.log
+*.pem

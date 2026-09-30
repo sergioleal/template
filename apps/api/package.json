@@ -1,0 +1,37 @@
+{
+  "name": "@agentikal/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch --clear-screen=false src/server.ts",
+    "build": "tsup",
+    "start": "node dist/server.js",
+    "typecheck": "tsc -p .",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx scripts/migrate.ts",
+    "search:reindex": "tsx scripts/search.ts reindex",
+    "search:enrich": "tsx scripts/search.ts enrich",
+    "mcp:smoke": "tsx scripts/mcp-smoke.ts",
+    "federation": "tsx scripts/federation.ts"
+  },
+  "dependencies": {
+    "@agentikal/shared": "0.1.0",
+    "@fastify/cookie": "^11.1.2",
+    "@fastify/etag": "^6.2.0",
+    "@fastify/rate-limit": "^11.2.0",
+    "@fastify/static": "^10.1.5",
+    "@modelcontextprotocol/sdk": "^1.30.1",
+    "drizzle-orm": "^0.45.3",
+    "fastify": "^5.12.5",
+    "fastify-plugin": "^6.0.0",
+    "jose": "^6.2.12",
+    "postgres": "^3.4.9",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.31.11",
+    "tsup": "^8.5.1",
+    "tsx": "^4.23.15"
+  }
+}

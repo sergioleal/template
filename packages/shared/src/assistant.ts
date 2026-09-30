@@ -215,7 +215,11 @@ export type ConfirmComponent = Extract<UiComponent, { type: "confirm" }>;
 
 export const assistantReplySchema = z
   .object({
-    message: z.string().describe("Resposta em Markdown para o usuário, em português"),
+    message: z.string().describe("Resposta em Markdown para o usuário, em português: curta, só o essencial"),
+    details: z
+      .string()
+      .optional()
+      .describe("Markdown que o chat mostra recolhido em 'Detalhes': tabelas, rodadas de negociação, comprovantes, explicações longas"),
     ui: z.array(uiComponentSchema).max(4),
   })
   .strict();

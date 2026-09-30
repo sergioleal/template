@@ -199,6 +199,15 @@ export function AssistantPage() {
                 <div className="prose">
                   <Markdown remarkPlugins={[remarkGfm]}>{m.reply.message}</Markdown>
                 </div>
+                {/* O que é longo (tabelas, rodadas, comprovantes) fica recolhido abaixo da resposta. */}
+                {m.reply.details && (
+                  <details className="reply-details">
+                    <summary>Detalhes</summary>
+                    <div className="prose">
+                      <Markdown remarkPlugins={[remarkGfm]}>{m.reply.details}</Markdown>
+                    </div>
+                  </details>
+                )}
                 {m.reply.ui.map((c, i) => {
                   const ref = `${m.id}:${i}`;
                   return (

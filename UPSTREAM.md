@@ -1,7 +1,7 @@
 # Origem do código do nó
 
 `apps/api`, `apps/web`, `apps/edge`, `packages/shared`, `tsconfig.base.json` e `.dockerignore` são uma cópia do
-Agentikal Registry (repositório `sergioleal/agentikalreg`), commit `a21f6784d71b9302778bfef3412fc55063c73097`
+Agentikal Registry (repositório `sergioleal/agentikalreg`), commit `8c082b6b8a8cc4e63c41a03b395233a01666a31c`
 (30/09/2026). É o mesmo código que roda o nó "Empresa Exemplo" (`REGISTRY_MODE=node`).
 
 Diferenças em relação ao original:

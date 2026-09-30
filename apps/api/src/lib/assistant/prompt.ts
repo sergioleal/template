@@ -31,7 +31,8 @@ ${agentCallsEnabled() ? AGENT_CALLS : ""}${focus ? focusSection(user, focus) : "
 
 ## Resposta
 Responda sempre no formato estruturado { message, ui }:
-- message: texto em Markdown, em português, direto e curto. Não repita o que os componentes já mostram.
+- message: texto em Markdown, em português, direto e curto: o que aconteceu, o número que importa e o próximo passo, em até 4 linhas. Não repita o que os componentes já mostram.
+- details (opcional): o que é longo vai aqui, e o chat mostra recolhido em "Detalhes": tabelas, rodadas de negociação, alternativas, comprovantes, explicações. Não repita em details o que já está em message.
 - ui: até 4 componentes, só quando ajudam.
 
 Componentes:
@@ -67,8 +68,8 @@ Você também age como o agente pessoal do usuário: descobre outros agentes no 
 - Delegação: quando o pedido citar um agente pelo @endereço ("pede ao @tbuilder…"), converse com esse agente e deixe com ele o trabalho que ele oferece. Não refaça por conta própria (por exemplo, falando direto com os fornecedores dele) o que ele já faz; passe a ele o pedido e os dados que ele pede (datas no formato das ferramentas dele).
 - Compromissos (requires_confirmation=true, como fechar pedido ou pagar) nunca são chamados por você: proponha um confirm { action: "call_agent", agent_id: "@endereço", tool, arguments_json, summary }, com os argumentos exatos e, em summary, o valor e com quem. A chamada acontece quando o usuário clicar; o resultado volta como evento ("[evento] Confirmou ..."). Se um compromisso depende do resultado de outro (pagar depende do pedido fechado), proponha só o primeiro e espere o evento.
 - Negociação: consulte todos os candidatos relevantes antes de escolher. Use ofertas reais dos concorrentes como argumento, nunca invente ofertas. Pare quando o fornecedor der a oferta final ou as rodadas acabarem. Escolha pelo menor valor final, salvo pedido diferente do usuário, e explique a escolha em poucas linhas.
-- Conte o que aconteceu nos bastidores: com quem falou (@endereço), o que cada um ofereceu em cada rodada e por que escolheu. Uma tabela curta em Markdown ajuda.
-- Nunca diga que fechou ou pagou antes do evento correspondente. Quando o evento trouxer um comprovante, resuma número, valor e autenticação.
+- Conte o que aconteceu nos bastidores em details: com quem falou (@endereço), o que cada um ofereceu em cada rodada e por que escolheu (uma tabela em Markdown ajuda). Em message, só o resultado: com quem ficou, o total e o próximo passo.
+- Nunca diga que fechou ou pagou antes do evento correspondente. Depois de um evento de fechar ou pagar, message tem uma ou duas linhas (fechado/pago, com quem, total, o que falta); pedidos, comprovantes, números e autenticações vão em details.
 `;
 
 type HistoryItem =
@@ -98,7 +99,8 @@ export function transcript(history: HistoryItem[], newText: string): string {
     if (m.role === "user") return `[usuário] ${m.text}`;
     if (m.role === "event") return `[evento] ${m.text}`;
     const ui = m.reply.ui.length ? `\n(componentes exibidos: ${m.reply.ui.map(describeUi).join("; ")})` : "";
-    return `[assistente] ${m.reply.message}${ui}`;
+    const details = m.reply.details ? `\n(detalhes: ${m.reply.details})` : "";
+    return `[assistente] ${m.reply.message}${details}${ui}`;
   });
   return [
     lines.length ? `Conversa até aqui:\n${lines.join("\n\n")}\n` : "",
